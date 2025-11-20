@@ -73,3 +73,21 @@ final class User: Model, Content, Authenticatable, @unchecked Sendable {
         self.activityLevel = activityLevel
     }
 }
+
+extension User {
+    func toPublicDTO() -> UserPublicDTO {
+        UserPublicDTO(
+            id: self.id,
+            firstName: self.firstName,
+            lastName: self.lastName,
+            email: self.email,
+            heightCm: self.heightCm,
+            initialWeightKg: self.initialWeightKg,
+            currentWeightKg: self.currentWeightKg,
+            dietPreference: self.dietPreference,
+            activityLevel: self.activityLevel,
+            createdAt: self.createdAt,
+            updatedAt: self.updatedAt
+        )
+    }
+}
