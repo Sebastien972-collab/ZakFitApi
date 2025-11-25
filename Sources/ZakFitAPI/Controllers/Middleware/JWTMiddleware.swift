@@ -27,6 +27,8 @@ final class JWTMiddleware: AsyncMiddleware {
             return try await next.respond(to: request)
 
         } catch {
+            request.logger.error("JWT error: \(error)")
+            print(error.localizedDescription)
             throw Abort(.unauthorized, reason: "Invalid or expired token")
         }
     }
