@@ -19,6 +19,7 @@ struct MealItemController: RouteCollection {
         
         // POST : création d'un item -> IDs dans le DTO
         protected.post(use: addItemToMeal)
+        protected.post("all", use: addItemsToMeal)
         
         // UPDATE / DELETE par itemID (REST classique)
         protected.put(":itemID", use: updateItem)
@@ -79,8 +80,47 @@ struct MealItemController: RouteCollection {
 //        // Recalcul des totaux du meal
 //        try await recalcMealTotals(mealID: dto.mealID, db: req.db)
         
-        return MealItemResponseDTO(from: item)
     }
+    @Sendable
+    func addItemsToMeal(req: Request) async throws -> [MealItemResponseDTO] {
+        let payload = try req.auth.require(UserPayload.self)
+        _ = payload.id
+        
+        let dto = try req.content.decode([MealItemCreateDTO].self)
+        
+        // Vérifier que le meal existe
+        var dtoToReurn : [MealItemResponseDTO] = []
+        for meal in dto {
+            guard let _ = try await Meal.find(meal.mealID, on: req.db) else {
+                throw Abort(.notFound, reason: "Meal not found")
+            }
+            let item = MealItem(
+                mealID: meal.mealID,
+                foodID: meal.foodID,
+                quantity: meal.quantity,
+                unit: meal.unit,
+                calories: meal.calories,
+                protein: meal.protein,
+                carbs: meal.carbs,
+                fat: meal.fat
+            )
+            do {
+                try await item.save(on: req.db)
+                dtoToReurn.append(MealItemResponseDTO(from: item))
+            } catch {
+                // Ceci affichera l'erreur précise de Postgres dans votre console Xcode
+                print("❌ ERREUR POSTGRES DÉTAILLÉE : \(String(reflecting: error))")
+                throw error
+            }
+            
+        }
+        return dtoToReurn
+        
+//        // Recalcul des totaux du meal
+//        try await recalcMealTotals(mealID: dto.mealID, db: req.db)
+        
+    }
+    // MARK: - ADD MULTIPLE ITEMS TO MEAL (array de DTO)
     
     // MARK: - UPDATE ITEM
     @Sendable
